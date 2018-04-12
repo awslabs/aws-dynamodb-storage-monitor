@@ -1,0 +1,98 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Sample template to monitor DynamoDB table's storage usage- V0.03",
+	"Parameters": {
+		"BucketName":{
+			"Type": "String",
+			"Description": "Enter bucket name"
+			},
+		"FileName":{
+			"Type": "String",
+			"Description": "Enter file name"
+			}
+		},
+    "Resources": {
+        "LambdaServiceExecutionRole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ],
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ],
+                    "Version": "2012-10-17"
+                },
+                "Path": "/",
+                "Policies": [{
+                    "PolicyName": "root",
+                    "PolicyDocument": {
+                        "Version": "2012-10-17",
+                        "Statement": [{
+                            "Effect": "Allow",
+                            "Action": ["cloudwatch:PutMetricData","logs:CreateLogStream","logs:PutLogEvents"],
+                            "Resource": "*"
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [ "dynamodb:ListTables", "dynamodb:DescribeTable"],
+                            "Resource": "*"
+                        }]
+                    }
+                }]
+            },
+            "Type": "AWS::IAM::Role"
+        },
+        "scheduledEvent": {
+            "Properties": {
+                "Description": "CloudWatch event to trigger lambda function",
+                "ScheduleExpression": "rate(6 hours)",
+                "State": "ENABLED",
+                "Targets": [
+                    {
+                        "Arn": { "Fn::GetAtt" : ["ddbstoragemon", "Arn"] },
+                        "Id": "DDBTarget"
+                    }
+                ]
+            },
+            "Type": "AWS::Events::Rule"
+        },
+        "LambdaInvokePermission": {
+          "Type": "AWS::Lambda::Permission",
+          "Properties": {
+            "FunctionName" : { "Fn::GetAtt" : ["ddbstoragemon", "Arn"] },
+            "Action": "lambda:InvokeFunction",
+            "Principal": "events.amazonaws.com",
+            "SourceArn" : { "Fn::GetAtt" : ["scheduledEvent", "Arn"] }
+          }
+        },
+        "ddbstoragemon": {
+            "Properties": {
+                "Code": {
+                    "S3Bucket": {"Ref": "BucketName"},
+                    "S3Key": {"Ref": "FileName"}
+                    
+                },
+                "Handler": "ddbstoragemon.lambda_handler",
+                "MemorySize": 128,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambdaServiceExecutionRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.6",
+                "Timeout": 300
+            },
+            "Type": "AWS::Lambda::Function"
+        }
+        }
+    }
+
