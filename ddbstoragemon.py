@@ -17,7 +17,7 @@ from botocore.exceptions import ClientError
 import os
 
 ddbRegion = os.environ['AWS_DEFAULT_REGION']
-ddbTable = 'hashrange'
+#ddbTable = 'hashrange'
 ddbClient = boto3.client('dynamodb', region_name=ddbRegion)
 
 
