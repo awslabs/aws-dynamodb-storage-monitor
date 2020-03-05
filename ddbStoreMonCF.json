@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
-    "Description": "Sample template to monitor DynamoDB table's storage usage- V0.03",
+    "Description": "Sample template to monitor DynamoDB table's storage usage- V0.04",
 	"Parameters": {
 		"BucketName":{
 			"Type": "String",
@@ -37,7 +37,13 @@
                         "Version": "2012-10-17",
                         "Statement": [{
                             "Effect": "Allow",
-                            "Action": ["cloudwatch:PutMetricData","logs:CreateLogStream","logs:PutLogEvents"],
+                            "Action": ["cloudwatch:PutMetricData"],
+							"Condition": {
+							"StringEquals": {
+								"cloudwatch:namespace": "DynamoDBStorageMetrics"
+							}
+						},
+							
                             "Resource": "*"
                         },
                         {
@@ -95,4 +101,3 @@
         }
         }
     }
-
